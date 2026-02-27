@@ -113,5 +113,10 @@ plt.ylabel("Position (m)")
 plt.grid(True)
 plt.legend()
 
+np.savez("simulation_data.npz", y_vals=y_vals, u_plot=u_plot)
+print("Simulation data saved to simulation_data.npz")
+
 plt.tight_layout()
+plt.savefig("simulate_2_springs_simple.png")
+print("Plot saved to simulate_2_springs_simple.png")
 plt.show()

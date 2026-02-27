@@ -1,7 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from simulate_2_springs_simple import y_vals, u_plot
+import os
+import sys
+
+data_file = "simulation_data.npz"
+if not os.path.exists(data_file):
+    print(f"Error: {data_file} not found. Please run 'simulate_2_springs_simple.py' once first to generate the data.")
+    sys.exit()
+
+data = np.load(data_file)
+y_vals = data['y_vals']
+u_plot = data['u_plot']
 
 # #convert to pandas dataframes 
 # y_vals = pd.DataFrame(y_vals)
