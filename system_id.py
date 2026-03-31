@@ -59,6 +59,7 @@ y_pred = np.zeros_like(y_vals)
 
 y_pred[0] = y_vals[0]
 
+# the ARMA model to predict the next state 
 for k in range (N - 1):
     # current state 
     x_k = y_pred[k].reshape(4,1)
@@ -93,4 +94,5 @@ plt.grid(True)
 plt.legend()
 
 plt.tight_layout()
+plt.savefig("linear_model_comparison.png")
 plt.show()
