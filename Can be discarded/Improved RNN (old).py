@@ -58,7 +58,7 @@ class RNN(nn.Module):
             u_k = u_seq[k]
 
             # update hidden state
-            h_k = torch.tanh(h_k @ self.W_hh + u_k @ self.W_uh + self.b_h)
+            h_k = torch.relu(h_k @ self.W_hh + u_k @ self.W_uh + self.b_h)
 
             # predict next state
             y_k = h_k @ self.W_hx + self.b_x
@@ -72,7 +72,7 @@ class RNN(nn.Module):
         return y_pred
 
 # train the model
-model = RNN(input_size=1, hidden_size=32, output_size=4)
+model = RNN(input_size=1, hidden_size=4, output_size=4)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -135,7 +135,7 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig("Vanilla RNN Comparison.png")
+plt.savefig("Improved RNN Comparison.png")
 plt.show()
 
     
