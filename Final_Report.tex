@@ -1,5 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage[margin=0.5in]{geometry}
+\usepackage[margin=0.75in]{geometry}
 \usepackage{mathptmx}
 \usepackage{graphicx}
 \usepackage{amsmath}
@@ -39,7 +39,7 @@ The state vector is $\mathbf{x}=[x_1,\dot{x}_1,x_2,\dot{x}_2]^{\top}$ with
 $m=[\tfrac{1}{4},\tfrac{1}{3}]$\,kg, $c=[\tfrac{1}{4},\tfrac{1}{3}]$\,Ns/m,
 $k=[1,\tfrac{5}{6}]$\,N/m (matching the reference paper). All code is at~\cite{code}.
 
-For the first phase, I started with data generation and Least Squares (LS) baselines. I simulated two spring variants (Fig. \ref{springs profile}). The original system with deadzone threshold $\delta{=}1.0$, and a shrunk variant with $\delta{=}0.25$ (as suggested by Prof. Caines), where the spring enters a steeper linear region at much smaller displacements. For each variant, I generated a training trajectory (with seed~42, Fig. \ref{original non lin springs with delta 1}) and a held-out test trajectory
+For the first phase, I started with data generation and Least Squares (LS) baselines. I simulated two spring variants (Fig. \ref{springs profile}). The original system has a deadzone threshold, $\delta{=}1.0$, and a shrunk variant with $\delta{=}0.25$ (as suggested by Prof. Caines). Here, the spring enters a steeper linear region at much smaller displacements. For each variant, I generated a training trajectory (with seed~42, Fig. \ref{original non lin springs with delta 1}) and a held-out test trajectory
 (seed~99) using RK4 integration ($\Delta t{=}0.01$\,s, $T{=}200$\,s, 20\,000 steps).
 I used both the raw states $\mathbf{x}$ and relative coordinates
 $\mathbf{z}=[x_1{-}x_2,\,\dot{x}_1{-}\dot{x}_2,\,x_2,\,\dot{x}_2]^{\top}$ to test my LS models. As a quantitative measure for model quality, I used NSE as defined in the paper: ~$\|\hat{y}{-}y\|/\|y\|$ (lower is better;
@@ -58,21 +58,25 @@ physics-inspired deadzone variant (\textbf{NLT}) before the hidden update,
 $z_1$ is replaced by $\text{deadzone}(z_1,1.0)$, zeroing the soft spring region to
 expose the underlying stiff dynamics more directly to the network (Fig. \ref{CL NLT RNN trajectory}).
 
-For the next phase of the project, I implemented two experiments: 2a and 2b. Experiment 2a (Figs. \ref{2a training loss}--\ref{2a eval}) used the best closed-loop ReLU configuration
-(h=64, z-coords) but added a \texttt{ReduceLROnPlateau} scheduler (initial
-$\text{lr}{=}0.01$, factor~0.5, patience~50 epochs). Training loss reached a minimum
-of $1.47\times10^{-4}$ over 1\,000 epochs, and the LR went from~0.01
-down to $3.9\times10^{-5}$ across seven reductions.
-Despite this, the autoregressive NSE exceeded 1.7 on both the training and test sets (indicating divergence). The one-step teacher-forcing with a decaying LR over-optimizes for small loss but produces a closed-loop system that is not autonomously stable. Experiment 2b (Figs. \ref{2b loss}--\ref{2b eval}) addressed this with a physics-informed residual/error
-architecture where the 9-dim input $[\mathbf{z}_k;\,u_k;\,\hat{\mathbf{z}}_{k+1}^{\text{LS}}]$
-adds to the state with the LS model's forward prediction. Now the RNN only needs to learn
-the nonlinear residual: $\Delta\hat{\mathbf{z}}_{k+1}=\hat{\mathbf{z}}_{k+1}-\hat{\mathbf{z}}_{k+1}^{\text{LS}}$.
-With the same LR scheduler the model converged stably, reaching test NSE
-$z_1{=}0.40$, $z_3{=}0.20$. This is the best RNN result, with $z_3$ matching the LS
-baseline on the absolute coordinate.
+% For the next phase of the project, I implemented two experiments: 2a and 2b. Experiment 2a (Figs. \ref{2a training loss}--\ref{2a eval}) used the best closed-loop ReLU configuration
+% (h=64, z-coords) but added a \texttt{ReduceLROnPlateau} scheduler (initial
+% $\text{lr}{=}0.01$, factor~0.5, patience~50 epochs). Training loss reached a minimum
+% of $1.47\times10^{-4}$ over 1\,000 epochs, and the LR went from~0.01
+% down to $3.9\times10^{-5}$ across seven reductions.
+% Despite this, the autoregressive NSE exceeded 1.7 on both the training and test sets (indicating divergence). The one-step teacher-forcing with a decaying LR over-optimizes for small loss but produces a closed-loop system that is not autonomously stable. Experiment 2b (Figs. \ref{2b loss}--\ref{2b eval}) addressed this with a physics-informed residual/error
+% architecture where the 9-dim input $[\mathbf{z}_k;\,u_k;\,\hat{\mathbf{z}}_{k+1}^{\text{LS}}]$
+% adds to the state with the LS model's forward prediction. Now the RNN only needs to learn
+% the nonlinear residual: $\Delta\hat{\mathbf{z}}_{k+1}=\hat{\mathbf{z}}_{k+1}-\hat{\mathbf{z}}_{k+1}^{\text{LS}}$.
+% With the same LR scheduler the model converged stably, reaching test NSE
+% $z_1{=}0.40$, $z_3{=}0.20$. This is the best RNN result, with $z_3$ matching the LS
+% baseline on the absolute coordinate.
 
-Overall, these experiments reveal that LS is the most efficient baseline and is optimal for dynamic systems where closed-loop training is necessary but not sufficient for stability. Feeding back the
-RNN input with the LS prediction (Exp.~2b) is the most effective approach tested. My future work can include implementing convex parametrization to improve robustness of the vanilla RNN, as suggested in \cite{revay2021}, and extending the study to the full four-mass system.
+In the next phase, I experimented with two approaches: 2a and 2b. For 2a (Figs. \ref{2a training loss}--\ref{2a eval}) I used the best closed-loop ReLU configuration (h=64, z-coords) with a \texttt{ReduceLROnPlateau} scheduler (initial $\text{lr}{=}0.01$, factor~0.5, patience~50). Training loss reached $1.47\times10^{-4}$ over 1,000 epochs, with the LR dropping to $3.9\times10^{-5}$. Despite this, the autoregressive NSE exceeded 1.7 on both sets. This shows that one-step teacher-forcing with a decaying LR over-optimizes for small loss but lacks stability. Approach 2b (Figs. \ref{2b loss}--\ref{2b eval}) solved this using a physics-informed residual architecture. By feeding the 9-dim input $[\mathbf{z}_k;\,u_k;\,\hat{\mathbf{z}}_{k+1}^{\text{LS}}]$, the RNN only learns the nonlinear residual: $\Delta\hat{\mathbf{z}}_{k+1}=\hat{\mathbf{z}}_{k+1}-\hat{\mathbf{z}}_{k+1}^{\text{LS}}$. With the same scheduler, the model converged stably (test NSE: $z_1{=}0.40$, $z_3{=}0.20$), making this the best RNN result and matching the Z-coordinate LS baseline for $z_3$.
+
+% Overall, these experiments reveal that LS is the most efficient baseline and is optimal for dynamic systems where closed-loop training is necessary but not sufficient for stability. Feeding back the
+% RNN input with the LS prediction (Exp.~2b) is the most effective approach tested. My future work can include implementing convex parametrization to improve robustness of the vanilla RNN, as suggested in \cite{revay2021}, and extending the study to the full four-mass system.
+
+Ultimately, these experiments reveal that LS is a highly efficient baseline and that feeding back the LS prediction into the RNN (Exp.~2b) is the most effective RNN method tested. My future work can explore convex parameterization to improve the robustness of the vanilla RNN, like in \cite{revay2021}, and extend the study to the full four-mass system.
 
 % ---------------------------------------------------------------
 %  REFERENCES  (on new page, like previous rotation report)
