@@ -52,7 +52,7 @@ hidden size~32, 3,000 epochs), tracked the ground truth given true inputs at eac
 (Fig. \ref{open loop vanilla RNN}) but it soon diverged immediately in autonomous rollout as the errors compound through the feedback path. So I redesigned the RNN's forward function to implement a closed-loop autoregressive model. This new model receives $[\mathbf{z}_k;\,u_k]\in\mathbb{R}^5$, predicts
 $\hat{\mathbf{z}}_{k+1}$, and that prediction feeds back as the next input.
 Working in transformed $\mathbf{z}$-coordinates (hidden~64, batch~16, Adam
-$\text{lr}{=}10^{-4}$, gradient clipping), I compared four activations:
+Learning Rate (lr) ($\text{lr}{=}10^{-4}$), gradient clipping), I compared four activations:
 \textbf{ReLU} (Fig. \ref{CL RNN loss}--\ref{CL RNN trajectory}), \textbf{ELU} (Fig. \ref{CL ELU RNN trajectory}), \textbf{tanh} (Fig. \ref{CL tanh RNN trajectory}), and a
 physics-inspired deadzone variant (\textbf{NLT}) before the hidden update,
 $z_1$ is replaced by $\text{deadzone}(z_1,1.0)$, zeroing the soft spring region to
@@ -71,7 +71,7 @@ expose the underlying stiff dynamics more directly to the network (Fig. \ref{CL 
 % $z_1{=}0.40$, $z_3{=}0.20$. This is the best RNN result, with $z_3$ matching the LS
 % baseline on the absolute coordinate.
 
-In the next phase, I experimented with two approaches: 2a and 2b. For 2a (Figs. \ref{2a training loss}--\ref{2a eval}) I used the best closed-loop ReLU configuration (h=64, z-coords) with a \texttt{ReduceLROnPlateau} scheduler (initial $\text{lr}{=}0.01$, factor~0.5, patience~50). Training loss reached $1.47\times10^{-4}$ over 1,000 epochs, with the LR dropping to $3.9\times10^{-5}$. Despite this, the autoregressive NSE exceeded 1.7 on both sets. This shows that one-step teacher-forcing with a decaying LR over-optimizes for small loss but lacks stability. Approach 2b (Figs. \ref{2b loss}--\ref{2b eval}) solved this using a physics-informed residual architecture. By feeding the 9-dim input $[\mathbf{z}_k;\,u_k;\,\hat{\mathbf{z}}_{k+1}^{\text{LS}}]$, the RNN only learns the nonlinear residual: $\Delta\hat{\mathbf{z}}_{k+1}=\hat{\mathbf{z}}_{k+1}-\hat{\mathbf{z}}_{k+1}^{\text{LS}}$. With the same scheduler, the model converged stably (test NSE: $z_1{=}0.40$, $z_3{=}0.20$), making this the best RNN result and matching the Z-coordinate LS baseline for $z_3$.
+In the next phase, I experimented with two approaches: 2a and 2b. For 2a (Figs. \ref{2a training loss}--\ref{2a eval}) I used the best closed-loop ReLU configuration (h=64, z-coords) with a \texttt{ReduceLROnPlateau} scheduler (initial $\text{lr}{=}0.01$, factor~0.5, patience~50). Training loss reached $1.47\times10^{-4}$ over 1,000 epochs, with the Learning Rate (LR) dropping to $3.9\times10^{-5}$. Despite this, the autoregressive NSE exceeded 1.7 on both sets. This shows that one-step teacher-forcing with a decaying LR over-optimizes for small loss but lacks stability. Approach 2b (Figs. \ref{2b loss}--\ref{2b eval}) solved this using a physics-informed residual architecture. By feeding the 9-dim input $[\mathbf{z}_k;\,u_k;\,\hat{\mathbf{z}}_{k+1}^{\text{LS}}]$, the RNN only learns the nonlinear residual: $\Delta\hat{\mathbf{z}}_{k+1}=\hat{\mathbf{z}}_{k+1}-\hat{\mathbf{z}}_{k+1}^{\text{LS}}$. With the same scheduler, the model converged stably (test NSE: $z_1{=}0.40$, $z_3{=}0.20$), making this the best RNN result and matching the Z-coordinate LS baseline for $z_3$.
 
 % Overall, these experiments reveal that LS is the most efficient baseline and is optimal for dynamic systems where closed-loop training is necessary but not sufficient for stability. Feeding back the
 % RNN input with the LS prediction (Exp.~2b) is the most effective approach tested. My future work can include implementing convex parametrization to improve robustness of the vanilla RNN, as suggested in \cite{revay2021}, and extending the study to the full four-mass system.
@@ -89,6 +89,9 @@ Ultimately, these experiments reveal that LS is a highly efficient baseline and 
   M.~Revay, R.~Wang, and I.~R.~Manchester,
   ``A convex parameterization of robust recurrent neural networks,''
   \textit{IEEE Control Systems Letters}, vol.~5, no.~4, pp.~1363--1368, Oct.~2021.
+
+\bibitem{revay2023recurrent}
+  M. Revay, R. Wang, and I. R. Manchester, "Recurrent equilibrium networks: Flexible dynamic models with guaranteed stability and robustness," IEEE Trans. Autom. Control, vol. 69, no. 5, pp. 2855-2870, 2023
 
 \bibitem{code}
   O.~Gundra, ``RNN Honours Rotation,'' GitHub, 2026. [Online].
@@ -248,7 +251,7 @@ Lower is better. NSE~$>1$ indicates divergence worse than predicting zero.
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.7\textwidth]{CL RNN Loss.png}
-  \caption{CL ReLU RNN Training Loss (hidden~64 (mistake in the image)), $\mathbf{z}$-coords, $n_\text{epochs}=1000$).
+  \caption{CL ReLU RNN Training Loss (hidden~64), $\mathbf{z}$-coords, $n_\text{epochs}=1000$).
     Loss decreases from $\approx0.2$ to $\approx0.0015$ over 1\,000 epochs with
     Adam ($\text{lr}{=}10^{-4}$) and gradient clipping.}
     \label{CL RNN loss}
@@ -258,7 +261,7 @@ Lower is better. NSE~$>1$ indicates divergence worse than predicting zero.
   \centering
   \includegraphics[width=\textwidth]{CL RNN Trajectory.png}
   \caption{CL ReLU RNN Evaluation (hidden~64, $\mathbf{z}$-coords).
-    Train and test were both done on the same dataset, yet sthe autoregressive rollout on $z_1$ (relative position) and $z_3$ (Cart~2 absolute position) still performs poorly on the already seen data.}
+    Train and test were both performed on the same dataset, yet the autoregressive rollout on $z_1$ (relative position) and $z_3$ (Cart~2 absolute position) still performs poorly on previously seen data.}
     \label{CL RNN trajectory}
 \end{figure}
 

@@ -111,8 +111,7 @@ RNN Honours Rotation/
 │       └── 2b eval.png
 │
 └── docs/                            ← Reference material
-    ├── A_Convex_Parameterization_of_Robust_Recurrent_Neural_Networks.pdf
-    └── pdf_content.txt              ← Extracted text from the reference paper
+    |── A_Convex_Parameterization_of_Robust_Recurrent_Neural_Networks.pdf
 ```
 
 ---
